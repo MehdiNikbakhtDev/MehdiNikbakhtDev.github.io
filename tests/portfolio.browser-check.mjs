@@ -180,6 +180,7 @@ async function main() {
     const consoleErrors = [];
     const pageExceptions = [];
     const failedLocalRequests = [];
+    const requestUrls = new Map();
 
     cdp.on("Runtime.consoleAPICalled", (event) => {
         if (event.type === "error") {
@@ -194,9 +195,13 @@ async function main() {
             failedLocalRequests.push(`${event.response.status} ${event.response.url}`);
         }
     });
+    cdp.on("Network.requestWillBeSent", (event) => {
+        requestUrls.set(event.requestId, event.request.url);
+    });
     cdp.on("Network.loadingFailed", (event) => {
-        if (event.type !== "Font") {
-            failedLocalRequests.push(`${event.errorText} ${event.type}`);
+        const requestUrl = requestUrls.get(event.requestId) || "";
+        if (requestUrl.startsWith(pageUrl) && event.type !== "Font") {
+            failedLocalRequests.push(`${event.errorText} ${event.type} ${requestUrl}`);
         }
     });
 
@@ -213,7 +218,10 @@ async function main() {
         h1: document.querySelector('#hero-title')?.textContent.trim(),
         nav: document.querySelector('[data-nav="about"]')?.textContent.trim(),
         renderedSections: [...document.querySelectorAll('[data-render]')].filter((element) => element.childElementCount > 0).length,
-        h1Count: document.querySelectorAll('h1').length
+        h1Count: document.querySelectorAll('h1').length,
+        consentVisible: !document.querySelector('#analytics-consent')?.hidden,
+        storedConsent: localStorage.getItem('portfolio-analytics-consent'),
+        googleTagPresent: Boolean(document.querySelector('#google-analytics-tag'))
     })`);
     assert(initialState.language === "de", "First visit did not default to German.");
     assert(initialState.storedLanguage === null, "A fresh first visit should not persist an implicit language choice.");
@@ -222,6 +230,9 @@ async function main() {
     assert(initialState.nav === "Über mich", "German navigation was not rendered.");
     assert(initialState.renderedSections === 8, "One or more page regions did not render.");
     assert(initialState.h1Count === 1, "The page must contain exactly one H1.");
+    assert(initialState.consentVisible, "The analytics consent banner is not visible on a first visit.");
+    assert(initialState.storedConsent === null, "A first visit must not imply analytics consent.");
+    assert(!initialState.googleTagPresent, "Google Analytics loaded before consent.");
 
     await cdp.evaluate("document.querySelector('[data-language=\"en\"]').click(); true");
     await waitFor(() => cdp.evaluate("document.documentElement.lang === 'en'"), "English language switch");
@@ -274,6 +285,14 @@ async function main() {
                     const rect = button.getBoundingClientRect();
                     return rect.width >= 44 && rect.height >= 44;
                 }),
+                consentControlsMeetTarget: [...document.querySelectorAll('[data-consent-action]')].every((button) => {
+                    const rect = button.getBoundingClientRect();
+                    return rect.width >= 44 && rect.height >= 44;
+                }),
+                consentWithinViewport: (() => {
+                    const rect = document.querySelector('#analytics-consent').getBoundingClientRect();
+                    return rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
+                })(),
                 heroWithinViewport: document.querySelector('#hero-title').getBoundingClientRect().right <= innerWidth,
                 overflowingTags
             };
@@ -282,6 +301,8 @@ async function main() {
         assert(layout.innerWidth === width, `Viewport width ${width}px was not applied.`);
         assert(layout.documentWidth <= width && layout.bodyWidth <= width, `Horizontal overflow detected at ${width}px.`);
         assert(layout.controlsMeetTarget, `Language controls are smaller than 44×44px at ${width}px.`);
+        assert(layout.consentControlsMeetTarget, `Consent controls are smaller than 44×44px at ${width}px.`);
+        assert(layout.consentWithinViewport, `Consent banner overflows the viewport at ${width}px.`);
         assert(layout.heroWithinViewport, `Hero title overflows at ${width}px.`);
         assert(layout.overflowingTags.length === 0, `Technology tags overflow at ${width}px: ${layout.overflowingTags.join(", ")}`);
         assert(layout.menuVisible === (width < 1040), `Navigation breakpoint is incorrect at ${width}px.`);
@@ -303,6 +324,20 @@ async function main() {
         writeFileSync(screenshotPath, Buffer.from(screenshot.data, "base64"));
         screenshots.push(screenshotPath);
     }
+
+    await cdp.evaluate("document.querySelector('[data-consent-action=\"deny\"]').click(); true");
+    assert(await cdp.evaluate("localStorage.getItem('portfolio-analytics-consent')") === "denied", "Analytics rejection was not stored.");
+    assert(await cdp.evaluate("document.querySelector('#analytics-consent').hidden"), "Consent banner did not close after rejection.");
+    assert(!await cdp.evaluate("Boolean(document.querySelector('#google-analytics-tag'))"), "Google Analytics loaded after rejection.");
+
+    await cdp.evaluate("document.querySelector('[data-analytics-settings]').click(); true");
+    assert(!await cdp.evaluate("document.querySelector('#analytics-consent').hidden"), "Analytics settings did not reopen the consent banner.");
+    assert(await cdp.evaluate("document.activeElement.dataset.consentAction") === "deny", "Consent settings did not move focus into the banner.");
+
+    await cdp.evaluate("document.querySelector('[data-consent-action=\"grant\"]').click(); true");
+    assert(await cdp.evaluate("localStorage.getItem('portfolio-analytics-consent')") === "granted", "Analytics consent was not stored.");
+    assert(await cdp.evaluate("document.querySelector('#analytics-consent').hidden"), "Consent banner did not close after acceptance.");
+    assert(!await cdp.evaluate("Boolean(document.querySelector('#google-analytics-tag'))"), "Google Analytics must stay disabled on localhost.");
 
     const localAssetStatus = await cdp.evaluate(`({
         images: [...document.images].map((image) => ({ src: image.getAttribute('src'), complete: image.complete, width: image.naturalWidth })),

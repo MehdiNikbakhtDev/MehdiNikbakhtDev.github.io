@@ -260,7 +260,15 @@
                 common: {
                     github: "GitHub",
                     linkedin: "LinkedIn",
-                    email: "E-Mail"
+                    email: "E-Mail",
+                    analyticsSettings: "Analytics-Einstellungen"
+                },
+                analytics: {
+                    eyebrow: "Datenschutz",
+                    title: "Optionale Webanalyse",
+                    description: "Google Analytics wird nur mit Ihrer Zustimmung geladen. Damit messen wir Besuche und die Nutzung dieser Website. Werbe-Speicher bleibt deaktiviert. Ihre Auswahl können Sie jederzeit im Footer ändern.",
+                    deny: "Ablehnen",
+                    grant: "Analyse erlauben"
                 },
                 footer: "© {year} Mehdi Nikbakht · Full-Stack .NET Developer · Wien"
             },
@@ -355,7 +363,15 @@
                 common: {
                     github: "GitHub",
                     linkedin: "LinkedIn",
-                    email: "Email"
+                    email: "Email",
+                    analyticsSettings: "Analytics settings"
+                },
+                analytics: {
+                    eyebrow: "Privacy",
+                    title: "Optional website analytics",
+                    description: "Google Analytics loads only with your consent. We use it to measure visits and how this website is used. Advertising storage remains disabled. You can change your choice at any time in the footer.",
+                    deny: "Decline",
+                    grant: "Allow analytics"
                 },
                 footer: "© {year} Mehdi Nikbakht · Full-Stack .NET Developer · Vienna"
             }

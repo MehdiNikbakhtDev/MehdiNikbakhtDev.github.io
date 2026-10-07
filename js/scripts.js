@@ -268,6 +268,7 @@
             '<div class="footer-links">',
                 externalLink(data.profile.github, copy.common.github, "footer-link"),
                 externalLink(data.profile.linkedin, copy.common.linkedin, "footer-link"),
+                '<button class="footer-link footer-button" type="button" data-analytics-settings>', escapeHtml(copy.common.analyticsSettings), '</button>',
             '</div>'
         ].join("");
     }

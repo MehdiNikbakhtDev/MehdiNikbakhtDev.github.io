@@ -116,12 +116,25 @@
         <div class="container" data-render="footer"></div>
     </footer>
 
+    <section class="consent-banner" id="analytics-consent" aria-labelledby="analytics-consent-title" aria-describedby="analytics-consent-description" hidden>
+        <div class="consent-banner-copy">
+            <p class="consent-kicker" data-consent-copy="eyebrow">Datenschutz</p>
+            <h2 id="analytics-consent-title" data-consent-copy="title">Optionale Webanalyse</h2>
+            <p id="analytics-consent-description" data-consent-copy="description">Google Analytics wird nur mit Ihrer Zustimmung geladen. Damit messen wir Besuche und die Nutzung dieser Website. Werbe-Speicher bleibt deaktiviert. Ihre Auswahl können Sie jederzeit im Footer ändern.</p>
+        </div>
+        <div class="consent-banner-actions">
+            <button class="button button-secondary" type="button" data-consent-action="deny">Ablehnen</button>
+            <button class="button button-primary" type="button" data-consent-action="grant">Analyse erlauben</button>
+        </div>
+    </section>
+
     <noscript>
         <div class="noscript-notice">Bitte aktivieren Sie JavaScript, um zwischen Deutsch und Englisch zu wechseln und das vollständige Portfolio anzuzeigen.</div>
     </noscript>
 
     <script src="js/content.js" defer></script>
     <script src="js/scripts.js" defer></script>
+    <script src="js/analytics-consent.js" defer></script>
 
     <!-- Cloudflare Web Analytics -->
     <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "31d6120d4afd49afbd58b724e00ec2d9"}'></script>
